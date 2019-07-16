@@ -1633,6 +1633,14 @@
             return GetFiles(directoryPath, @"*.*", searchOption);
         }
 
+        public static void GetLastErrorAndThrowIfFailed(string extra)
+        {
+            if (Marshal.GetLastWin32Error() != 0)
+            {
+                throw new Exception(new Win32Exception(Marshal.GetLastWin32Error()).Message + " : " + extra);
+            }
+        }
+
         public static ZlpFileInfo[] GetFiles(string directoryPath, string pattern, SearchOption searchOption)
         {
             directoryPath = CheckAddLongPathPrefix(directoryPath);
@@ -1640,7 +1648,13 @@
             var results = new List<ZlpFileInfo>();
             var findHandle = PInvokeHelper.FindFirstFile(directoryPath.TrimEnd('\\') + "\\" + pattern, out var findData);
 
-            if (findHandle != PInvokeHelper.INVALID_HANDLE_VALUE)
+            if (findHandle == PInvokeHelper.INVALID_HANDLE_VALUE)
+            {
+                if (Marshal.GetLastWin32Error() != 2)
+                {
+                    GetLastErrorAndThrowIfFailed(ForceRemoveLongPathPrefix(directoryPath));
+                }
+            } else
             {
                 try
                 {
@@ -1755,7 +1769,14 @@
             var results = new List<ZlpDirectoryInfo>();
             var findHandle = PInvokeHelper.FindFirstFile(directoryPath.TrimEnd('\\') + @"\" + pattern, out var findData);
 
-            if (findHandle != PInvokeHelper.INVALID_HANDLE_VALUE)
+            if (findHandle == PInvokeHelper.INVALID_HANDLE_VALUE)
+            {
+                if (Marshal.GetLastWin32Error() != 2)
+                {
+                    GetLastErrorAndThrowIfFailed(ForceRemoveLongPathPrefix(directoryPath));
+                }
+            }
+            else
             {
                 try
                 {
